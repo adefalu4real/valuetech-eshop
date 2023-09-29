@@ -6,6 +6,15 @@ import { FaTimes, FaUserCircle } from "react-icons/fa";
 import { auth } from "../../firebase/config";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import {
+  REMOVE_ACTIVE_USER,
+  SET_ACTIVE_USER,
+} from "../../redux/slice/authSlice";
+import ShowOnLogin, { ShowOnLogOut } from "../hiddenLink/hiddenLink";
+import AdminOnlyRouter, {
+  AdminOnlyLink,
+} from "../adminOnlyRouter/AdminOnlyRouter";
 
 const logo = (
   <div className={styles.logo}>
@@ -33,6 +42,8 @@ const Header = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [displayName, setDisplayName] = useState("");
 
+  const dispatch = useDispatch();
+
   const navigate = useNavigate();
 
   const toggleMenu = () => {
@@ -57,13 +68,27 @@ const Header = () => {
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        const uid = user.uid;
-        setDisplayName(user.displayName);
+        if (user.displayName === null) {
+          const u1 = user.email.substring(0, user.email.indexOf("@"));
+          const uName = u1.charAt(0).toUpperCase() + u1.slice(1);
+          setDisplayName(uName);
+        } else {
+          setDisplayName(user.displayName);
+        }
+
+        dispatch(
+          SET_ACTIVE_USER({
+            email: user.email,
+            userName: user.displayName ? user.displayName : displayName,
+            userId: user.uid,
+          })
+        );
       } else {
         setDisplayName("");
+        dispatch(REMOVE_ACTIVE_USER());
       }
     });
-  }, []);
+  }, [dispatch, displayName]);
 
   return (
     <header>
@@ -89,6 +114,13 @@ const Header = () => {
               <FaTimes size={22} color="#fff" onClick={hideMenu} />
             </li>
             <li>
+              <AdminOnlyLink>
+                <Link to="/admin/home">
+                  <button className="--btn --btn-primary">Admin</button>
+                </Link>
+              </AdminOnlyLink>
+            </li>
+            <li>
               <NavLink to="/" className={activeLink}>
                 Home
               </NavLink>
@@ -101,21 +133,31 @@ const Header = () => {
           </ul>
           <div className={styles["header-right"]} onClick={hideMenu}>
             <span className={styles.links}>
-              <NavLink to="login" className={activeLink}>
-                Login
-              </NavLink>
-              <a href="#">
-                <FaUserCircle size={16} /> Hi, {displayName}
-              </a>
-              <NavLink to="register" className={activeLink}>
-                Register
-              </NavLink>
-              <NavLink to="order-history" className={activeLink}>
-                My Order
-              </NavLink>
-              <NavLink to="logout" className={activeLink} onClick={logoutUser}>
-                Logout
-              </NavLink>
+              <ShowOnLogin>
+                <NavLink to="login" className={activeLink}>
+                  Login
+                </NavLink>
+              </ShowOnLogin>
+              <ShowOnLogOut>
+                <a href="#home" style={{ color: "#ff7722" }}>
+                  <FaUserCircle size={16} /> Hi, {displayName}
+                </a>
+              </ShowOnLogOut>
+
+              <ShowOnLogOut>
+                <NavLink to="order-history" className={activeLink}>
+                  My Order
+                </NavLink>
+              </ShowOnLogOut>
+              <ShowOnLogOut>
+                <NavLink
+                  to="logout"
+                  className={activeLink}
+                  onClick={logoutUser}
+                >
+                  Logout
+                </NavLink>
+              </ShowOnLogOut>
             </span>
             {cart}
           </div>
