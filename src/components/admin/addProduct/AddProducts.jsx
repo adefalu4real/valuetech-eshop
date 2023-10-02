@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import styles from "./AddProducts.module.scss";
 import Card from "../../card/Card";
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
 import { db, storage } from "../../../firebase/config";
 import { toast } from "react-toastify";
-import { Timestamp, addDoc, collection } from "firebase/firestore";
+import { Timestamp, addDoc, collection, doc, setDoc } from "firebase/firestore";
 import Loader from "../../loader/Loader";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -33,12 +38,7 @@ const AddProduct = () => {
   console.log(products);
 
   const productEdit = products.find((i) => i.id === id);
-
-  if (productEdit) {
-    console.log(productEdit);
-  } else {
-    console.log(`No product found with ID: ${id}`);
-  }
+  console.log(productEdit);
 
   const [product, setProduct] = useState(() => {
     const newState = detectForm(id, { ...initialState }, productEdit);
@@ -115,8 +115,30 @@ const AddProduct = () => {
     // console.log(product);
     setIsLoading(true);
 
+    if (product.imageUrl !== productEdit.imageUrl) {
+      const storageRef = ref(storage, productEdit.imageUrl);
+
+      deleteObject(storageRef);
+    }
+
     try {
-    } catch (error) {}
+      setDoc(doc(db, "product", id), {
+        name: product.name,
+        imageUrl: product.imageUrl,
+        price: product.price,
+        category: product.category,
+        brand: product.brand,
+        desc: product.desc,
+        createdAt: productEdit.createdAt,
+        editedAt: Timestamp.now().toDate(),
+      });
+      setIsLoading(false);
+      toast.success("Product edited successfully..");
+      navigate("/admin/all-product");
+    } catch (error) {
+      setIsLoading(false);
+      toast.error(error.message);
+    }
   };
 
   return (

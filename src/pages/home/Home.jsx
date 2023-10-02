@@ -1,11 +1,12 @@
 import React from "react";
 import Slider from "../../components/slider/Slider";
+import Product from "../../components/product/Product";
 
 function Home() {
   return (
     <div>
       {/* <Slider /> */}
-      <h1>HOME ADMIN</h1>
+      <Product />
     </div>
   );
 }
